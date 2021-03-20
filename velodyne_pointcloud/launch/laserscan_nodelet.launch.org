@@ -1,4 +1,3 @@
-
 <!-- -*- mode: XML -*- -->
 <!-- run velodyne_laserscan/LaserScanNodelet in a nodelet manager -->
 

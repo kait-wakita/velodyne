@@ -200,6 +200,9 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
       {
         const uint16_t r = *((const uint16_t*)(&it[R]));  // ring
 
+        // #######################################
+        // ## select z-range and covert to /scan
+        // ######################################
         if (cfg_.ring < 0)
         {
           const float x = it[X];  // x
@@ -211,11 +214,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
           if ((bin >= 0) && (bin < static_cast<int>(SIZE)))
           {
             float range_val = sqrtf(x * x + y * y);
-            // #######################################
-            // ## select z-range and covert to /scan
-            // ######################################
-	    // if((z < 0.3) && (z > -0.6)) {
-	    if((z < cfg_.zmax) && (z > cfg_.zmin)) {
+	    if((z < 0.3) && (z > -0.6)) {
               if( range_val < scan->ranges[bin]) {
 	        scan->ranges[bin] = range_val;
 	      }
