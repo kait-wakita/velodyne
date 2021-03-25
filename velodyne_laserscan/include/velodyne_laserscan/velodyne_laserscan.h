@@ -59,6 +59,7 @@ private:
   ros::NodeHandle nh_;
   ros::Subscriber sub_;
   ros::Publisher pub_;
+  ros::Publisher pub2_;
 
   VelodyneLaserScanConfig cfg_;
   dynamic_reconfigure::Server<VelodyneLaserScanConfig> srv_;

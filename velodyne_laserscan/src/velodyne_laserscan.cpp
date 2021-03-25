@@ -40,8 +40,11 @@ VelodyneLaserScan::VelodyneLaserScan(ros::NodeHandle &nh, ros::NodeHandle &nh_pr
     nh_(nh), srv_(nh_priv), ring_count_(0)
 {
   ros::SubscriberStatusCallback connect_cb = boost::bind(&VelodyneLaserScan::connectCb, this);
-  pub_ = nh.advertise<sensor_msgs::LaserScan>("scan_vlp", 10, connect_cb, connect_cb);
-
+  pub_ = nh.advertise<sensor_msgs::LaserScan>("scan_amcl", 10, connect_cb, connect_cb);
+  // add pub2_ for scan_planner
+  //  not care about SubscriberStatusCallback
+  pub2_ = nh.advertise<sensor_msgs::LaserScan>("scan_planner", 10);
+  
   srv_.setCallback(boost::bind(&VelodyneLaserScan::reconfig, this, _1, _2));
 }
 
@@ -184,12 +187,23 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
     scan->time_increment = 0.0;
     scan->ranges.resize(SIZE, INFINITY);
 
+    sensor_msgs::LaserScanPtr scan2(new sensor_msgs::LaserScan());
+    scan2->header = msg->header;
+    scan2->angle_increment = RESOLUTION;
+    scan2->angle_min = -M_PI;
+    scan2->angle_max = M_PI;
+    scan2->range_min = 0.5;
+    scan2->range_max = 100.0;
+    scan2->time_increment = 0.0;
+    scan2->ranges.resize(SIZE, INFINITY);
+
     if ((offset_x == 0) &&
         (offset_y == 4) &&
         (offset_i % 4 == 0) &&
         (offset_r % 4 == 0))
     {
       scan->intensities.resize(SIZE);
+      scan2->intensities.resize(SIZE);
 
       const size_t X = 0;
       const size_t Y = 1;
@@ -214,12 +228,17 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
             // #######################################
             // ## select z-range and covert to /scan
             // ######################################
-	    // if((z < 0.3) && (z > -0.6)) {
-	    if((z < cfg_.zmax) && (z > cfg_.zmin)) {
+	    if((z < cfg_.zmax_amcl) && (z > cfg_.zmin_amcl)) {
               if( range_val < scan->ranges[bin]) {
 	        scan->ranges[bin] = range_val;
 	      }
               scan->intensities[bin] = i;
+	    }
+	    if((z < cfg_.zmax_planner) && (z > cfg_.zmin_planner)) {
+              if( range_val < scan2->ranges[bin]) {
+	        scan2->ranges[bin] = range_val;
+	      }
+              scan2->intensities[bin] = i;
 	    }
           }
 	}
@@ -234,6 +253,8 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
           {
             scan->ranges[bin] = sqrtf(x * x + y * y);
             scan->intensities[bin] = i;
+            scan2->ranges[bin] = sqrtf(x * x + y * y);
+            scan2->intensities[bin] = i;
           }
         }
 	  
@@ -246,6 +267,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
       if (offset_i >= 0)
       {
         scan->intensities.resize(SIZE);
+        scan2->intensities.resize(SIZE);
         sensor_msgs::PointCloud2ConstIterator<uint16_t> iter_r(*msg, "ring");
         sensor_msgs::PointCloud2ConstIterator<float> iter_x(*msg, "x");
         sensor_msgs::PointCloud2ConstIterator<float> iter_y(*msg, "y");
@@ -265,6 +287,8 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
             {
               scan->ranges[bin] = sqrtf(x * x + y * y);
               scan->intensities[bin] = i;
+              scan2->ranges[bin] = sqrtf(x * x + y * y);
+              scan2->intensities[bin] = i;
             }
           }
         }
@@ -288,6 +312,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
             if ((bin >= 0) && (bin < static_cast<int>(SIZE)))
             {
               scan->ranges[bin] = sqrtf(x * x + y * y);
+              scan2->ranges[bin] = sqrtf(x * x + y * y);
             }
           }
         }
@@ -295,6 +320,7 @@ void VelodyneLaserScan::recvCallback(const sensor_msgs::PointCloud2ConstPtr& msg
     }
 
     pub_.publish(scan);
+    pub2_.publish(scan2);
   }
   else
   {

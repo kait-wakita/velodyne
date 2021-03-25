@@ -5,14 +5,18 @@
   <arg name="manager" default="velodyne_nodelet_manager" />
   <arg name="ring" default="-1" />
   <arg name="resolution" default="0.007" />
-  <arg name="zmax" default="0.3" />
-  <arg name="zmin" default="-0.6" />
+  <arg name="zmin_amcl" default="-0.6" />
+  <arg name="zmax_amcl" default="0.3" />
+  <arg name="zmin_planner" default="-0.6" />
+  <arg name="zmax_planner" default="0.3" />
 
   <node pkg="nodelet" type="nodelet" name="$(arg manager)_laserscan"
         args="load velodyne_laserscan/LaserScanNodelet $(arg manager)">
     <param name="ring" value="$(arg ring)"/>
     <param name="resolution" value="$(arg resolution)"/>
-    <param name="zmin" value="$(arg zmin)"/>
-    <param name="zmax" value="$(arg zmax)"/>
+    <param name="zmin_amcl" value="$(arg zmin_amcl)"/>
+    <param name="zmax_amcl" value="$(arg zmax_amcl)"/>
+    <param name="zmin_planner" value="$(arg zmin_planner)"/>
+    <param name="zmax_planner" value="$(arg zmax_planner)"/>
   </node>
 </launch>
